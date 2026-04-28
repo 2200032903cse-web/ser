@@ -1,0 +1,10 @@
+__pycache__/
+**/__pycache__/
+*.pyc
+.env
+venv/
+.venv/
+logs.csv
+users.db
+local_data/
+backend/database.db

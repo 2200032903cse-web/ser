@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SER Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body class="min-h-screen bg-[#101114] text-zinc-100">
+    <section id="authScreen" class="auth-shell">
+      <div class="auth-card">
+        <p class="text-xs uppercase tracking-[0.22em] text-teal-300">SER Demo</p>
+        <h1 class="mt-3 text-3xl font-semibold text-white">Speech Emotion Recognition</h1>
+        <p class="mt-3 text-sm text-zinc-400">
+          Login to analyze speech audio, review your history, and view model metrics.
+        </p>
+
+        <div class="auth-tabs mt-6">
+          <button id="loginTab" class="auth-tab active" type="button">Login</button>
+          <button id="signupTab" class="auth-tab" type="button">Signup</button>
+        </div>
+
+        <form id="loginForm" class="mt-6 space-y-4">
+          <label class="field-label" for="loginUsername">Username</label>
+          <input id="loginUsername" class="field-input" autocomplete="username" required />
+          <label class="field-label" for="loginPassword">Password</label>
+          <input id="loginPassword" class="field-input" type="password" autocomplete="current-password" required />
+          <button class="primary-btn w-full" type="submit">Login</button>
+        </form>
+
+        <form id="signupForm" class="mt-6 hidden space-y-4">
+          <label class="field-label" for="signupUsername">Username</label>
+          <input id="signupUsername" class="field-input" autocomplete="username" required />
+          <label class="field-label" for="signupPassword">Password</label>
+          <input id="signupPassword" class="field-input" type="password" autocomplete="new-password" required />
+          <button class="primary-btn w-full" type="submit">Create Account</button>
+        </form>
+
+        <p id="authMessage" class="mt-4 min-h-6 text-sm text-zinc-400"></p>
+      </div>
+
+      <aside class="auth-info hidden lg:block">
+        <p class="text-sm uppercase tracking-[0.22em] text-zinc-500">Final-Year B.Tech</p>
+        <h2 class="mt-4 text-4xl font-semibold text-white">Fast pretrained SER with user logs.</h2>
+        <div class="mt-8 grid gap-3">
+          <div class="auth-stat"><span>Model</span><strong>wav2vec2-base-superb-er</strong></div>
+          <div class="auth-stat"><span>Storage</span><strong>SQLite + CSV</strong></div>
+          <div class="auth-stat"><span>Input</span><strong>Upload + Browser Recording</strong></div>
+        </div>
+      </aside>
+    </section>
+
+    <div id="appShell" class="hidden min-h-screen">
+      <aside class="hidden w-72 border-r border-white/10 bg-[#17191f] p-6 lg:block">
+        <div class="mb-8">
+          <p class="text-xs uppercase tracking-[0.22em] text-teal-300">SER Demo</p>
+          <h1 id="batchName" class="mt-3 text-2xl font-semibold text-white">Batch 238</h1>
+          <p id="memberCount" class="mt-1 text-sm text-zinc-400">4 members</p>
+        </div>
+
+        <nav class="mb-8 space-y-2">
+          <button class="nav-link active" data-page="predict">Predict</button>
+          <button class="nav-link" data-page="history">History</button>
+          <button class="nav-link" data-page="metrics">Metrics</button>
+          <button class="nav-link" data-page="about">About</button>
+        </nav>
+
+        <section>
+          <h2 class="text-sm font-medium text-zinc-300">Team</h2>
+          <ul id="teamList" class="mt-3 space-y-2 text-sm text-zinc-400"></ul>
+        </section>
+      </aside>
+
+      <main class="flex-1">
+        <header class="border-b border-white/10 bg-[#15171c]/95 px-5 py-4 lg:px-8">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p class="text-sm text-teal-300">Speech Emotion Recognition</p>
+              <h2 id="pageTitle" class="text-2xl font-semibold text-white">Predict</h2>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+              <span id="apiStatus" class="status-pill">Connecting</span>
+              <span id="signedInUser" class="user-pill">User</span>
+              <button id="logoutBtn" class="secondary-btn compact" type="button">Logout</button>
+              <select id="mobileNav" class="rounded-md border border-white/10 bg-[#20232b] px-3 py-2 text-sm text-white lg:hidden">
+                <option value="predict">Predict</option>
+                <option value="history">History</option>
+                <option value="metrics">Metrics</option>
+                <option value="about">About</option>
+              </select>
+            </div>
+          </div>
+        </header>
+
+        <section class="p-5 lg:p-8">
+          <div id="predictPage" class="page-view">
+            <div class="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
+              <section class="panel">
+                <div id="dropZone" class="upload-zone">
+                  <input id="audioInput" class="hidden" type="file" accept="audio/*,.wav" />
+                  <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-teal-400/10 text-3xl">&#127897;&#65039;</div>
+                  <h3 class="mt-5 text-xl font-semibold text-white">Upload or record speech audio</h3>
+                  <p id="fileName" class="mt-2 text-sm text-zinc-400">Drop a WAV file here or choose from your device.</p>
+                  <div class="mt-5 flex flex-wrap items-center justify-center gap-3">
+                    <button id="chooseFileBtn" class="secondary-btn" type="button">Choose File</button>
+                    <button id="recordBtn" class="secondary-btn" type="button">Record Audio</button>
+                    <button id="stopRecordBtn" class="danger-btn" type="button" disabled>Stop</button>
+                  </div>
+                  <div class="mt-4 flex items-center justify-center gap-2 text-sm text-zinc-400">
+                    <span id="recordingDot" class="recording-dot hidden"></span>
+                    <span id="recordingStatus">Microphone ready</span>
+                  </div>
+                </div>
+
+                <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p id="message" class="min-h-6 text-sm text-zinc-400"></p>
+                  <button id="predictBtn" class="primary-btn" type="button" disabled>
+                    <span id="buttonText">Predict Emotion</span>
+                    <span id="loadingSpinner" class="spinner hidden"></span>
+                  </button>
+                </div>
+              </section>
+
+              <section class="panel result-panel">
+                <p class="text-sm uppercase tracking-[0.2em] text-zinc-500">Result</p>
+                <div id="resultEmpty" class="mt-8 text-center text-zinc-500">No prediction yet</div>
+                <div id="resultCard" class="hidden">
+                  <div id="emotionEmoji" class="text-7xl">&#128528;</div>
+                  <h3 id="emotionLabel" class="mt-5 text-4xl font-semibold capitalize text-white">Neutral</h3>
+                  <div class="mt-6">
+                    <div class="mb-2 flex items-center justify-between text-sm">
+                      <span class="text-zinc-400">Confidence</span>
+                      <span id="confidenceText" class="font-medium text-teal-300">0%</span>
+                    </div>
+                    <div class="h-3 overflow-hidden rounded-full bg-white/10">
+                      <div id="confidenceBar" class="h-full w-0 rounded-full bg-teal-300 transition-all duration-500"></div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+
+          <div id="historyPage" class="page-view hidden">
+            <section class="panel">
+              <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 class="text-xl font-semibold text-white">Prediction History</h3>
+                  <p class="text-sm text-zinc-400">Only your predictions are shown here.</p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                  <select id="historySort" class="field-input small">
+                    <option value="desc">Newest first</option>
+                    <option value="asc">Oldest first</option>
+                  </select>
+                  <button id="refreshHistoryBtn" class="secondary-btn" type="button">Reload</button>
+                  <button id="clearHistoryBtn" class="danger-btn" type="button">Clear</button>
+                </div>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="min-w-full text-left text-sm">
+                  <thead class="border-b border-white/10 text-xs uppercase tracking-[0.16em] text-zinc-500">
+                    <tr>
+                      <th class="py-3 pr-4">Timestamp</th>
+                      <th class="py-3 pr-4">Filename</th>
+                      <th class="py-3 pr-4">Emotion</th>
+                      <th class="py-3 pr-4">Confidence</th>
+                    </tr>
+                  </thead>
+                  <tbody id="historyBody" class="divide-y divide-white/10 text-zinc-300"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+
+          <div id="metricsPage" class="page-view hidden">
+            <div class="grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">
+              <section class="panel">
+                <h3 class="text-xl font-semibold text-white">Model Performance</h3>
+                <p class="mt-2 text-sm text-zinc-400">Approximate demo metrics for the pretrained SER pipeline.</p>
+                <div class="mt-5 grid gap-3 sm:grid-cols-2">
+                  <div class="metric-card"><span>Accuracy</span><strong>82%</strong></div>
+                  <div class="metric-card"><span>Precision</span><strong>80%</strong></div>
+                  <div class="metric-card"><span>Recall</span><strong>79%</strong></div>
+                  <div class="metric-card"><span>F1-score</span><strong>80%</strong></div>
+                </div>
+                <div class="mt-6 space-y-3 text-sm text-zinc-400">
+                  <p><strong class="text-zinc-200">Accuracy:</strong> Overall share of correctly predicted audio samples.</p>
+                  <p><strong class="text-zinc-200">Precision:</strong> Reliability of each predicted emotion label.</p>
+                  <p><strong class="text-zinc-200">Recall:</strong> Ability to find all samples from each emotion class.</p>
+                  <p><strong class="text-zinc-200">F1-score:</strong> Balanced score combining precision and recall.</p>
+                </div>
+              </section>
+
+              <section class="panel">
+                <h3 class="text-xl font-semibold text-white">Confusion Matrix</h3>
+                <p class="mt-2 text-sm text-zinc-400">Static sample matrix for demo explanation.</p>
+                <div class="mt-5 overflow-x-auto">
+                  <table class="matrix-table">
+                    <thead>
+                      <tr>
+                        <th>Actual / Predicted</th>
+                        <th>Happy</th>
+                        <th>Sad</th>
+                        <th>Angry</th>
+                        <th>Neutral</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><th>Happy</th><td>41</td><td>3</td><td>4</td><td>2</td></tr>
+                      <tr><th>Sad</th><td>4</td><td>38</td><td>3</td><td>5</td></tr>
+                      <tr><th>Angry</th><td>5</td><td>2</td><td>40</td><td>3</td></tr>
+                      <tr><th>Neutral</th><td>3</td><td>6</td><td>4</td><td>37</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            </div>
+          </div>
+
+          <div id="aboutPage" class="page-view hidden">
+            <section class="panel max-w-4xl">
+              <h3 class="text-2xl font-semibold text-white">About the Project</h3>
+              <div class="mt-5 space-y-3 text-zinc-400">
+                <p><strong class="text-zinc-200">Objective:</strong> Classify human emotions from speech audio to improve human-computer interaction, mental health monitoring, and customer service.</p>
+                <p><strong class="text-zinc-200">Method:</strong> Audio is processed with machine learning techniques to detect emotions such as happy, sad, angry, and neutral.</p>
+                <p><strong class="text-zinc-200">Output:</strong> The system displays the predicted emotion, confidence score, and stores results for later analysis.</p>
+                <p><strong class="text-zinc-200">Applications:</strong> Mental health monitoring, virtual assistants, and call centers.</p>
+              </div>
+              <div class="mt-6 grid gap-4 sm:grid-cols-3">
+                <div class="tech-tile">FastAPI</div>
+                <div class="tech-tile">Hugging Face Transformers</div>
+                <div class="tech-tile">Tailwind CSS</div>
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/static/script.js"></script>
+  </body>
+</html>
