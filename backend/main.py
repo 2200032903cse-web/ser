@@ -1,5 +1,4 @@
 import os
-import shutil
 import tempfile
 
 from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, UploadFile
@@ -36,6 +35,8 @@ CONTENT_TYPE_EXTENSIONS = {
     "audio/webm": ".webm",
     "audio/mp4": ".mp4",
 }
+MAX_AUDIO_BYTES = 5 * 1024 * 1024
+UPLOAD_CHUNK_SIZE = 1024 * 1024
 
 app = FastAPI(title="Speech Emotion Recognition API", version="1.0.0")
 
@@ -84,6 +85,22 @@ def _audio_suffix(filename: str, content_type: str | None) -> str:
 
     content_type = (content_type or "").split(";")[0].strip().lower()
     return CONTENT_TYPE_EXTENSIONS.get(content_type, ".webm")
+
+
+def _save_upload_file_limited(file: UploadFile, suffix: str) -> str:
+    total_size = 0
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix, dir=STORAGE_DIR) as temp_audio:
+        temp_path = temp_audio.name
+        while chunk := file.file.read(UPLOAD_CHUNK_SIZE):
+            total_size += len(chunk)
+            if total_size > MAX_AUDIO_BYTES:
+                temp_audio.close()
+                os.remove(temp_path)
+                raise HTTPException(status_code=413, detail="Audio file must be 5MB or smaller.")
+            temp_audio.write(chunk)
+
+    return temp_path
 
 
 @app.get("/")
@@ -138,10 +155,7 @@ async def predict(file: UploadFile = File(...), username: str = Depends(require_
 
     temp_path = None
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix, dir=STORAGE_DIR) as temp_audio:
-            temp_path = temp_audio.name
-            shutil.copyfileobj(file.file, temp_audio)
-
+        temp_path = await run_in_threadpool(_save_upload_file_limited, file, suffix)
         result = await run_in_threadpool(predict_emotion, temp_path)
         await run_in_threadpool(
             append_prediction,
@@ -151,6 +165,8 @@ async def predict(file: UploadFile = File(...), username: str = Depends(require_
             result["confidence"],
         )
         return result
+    except HTTPException:
+        raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Prediction failed: {exc}") from exc
     finally:
